@@ -43,31 +43,21 @@ export default async function CountryPage({
   const activeTab: "movie" | "tv" = tab === "tv" ? "tv" : "movie";
   const pageNum = Math.max(1, Math.min(500, Number(page) || 1));
 
-  const [movies, shows] = await Promise.all([
-    discoverByNetflix("movie", code, activeTab === "movie" ? pageNum : 1).catch(
-      () => null,
-    ),
-    discoverByNetflix("tv", code, activeTab === "tv" ? pageNum : 1).catch(
-      () => null,
-    ),
-  ]);
+  // Only fetch the active tab — saves a round-trip and lets API errors bubble
+  // to error.tsx (instead of being miscategorized as "not found").
+  const data = await discoverByNetflix(activeTab, code, pageNum);
+  const items: TitleCardItem[] = data.results
+    .filter((r) => r.poster_path)
+    .map((r: DiscoverItem) => ({
+      id: r.id,
+      type: activeTab,
+      title: titleOf(r),
+      year: yearOf(r),
+      poster_path: r.poster_path,
+      vote_average: r.vote_average,
+    }));
 
-  if (!movies && !shows) notFound();
-
-  const data = activeTab === "movie" ? movies : shows;
-  const items: TitleCardItem[] =
-    data?.results
-      .filter((r) => r.poster_path)
-      .map((r: DiscoverItem) => ({
-        id: r.id,
-        type: activeTab,
-        title: titleOf(r),
-        year: yearOf(r),
-        poster_path: r.poster_path,
-        vote_average: r.vote_average,
-      })) ?? [];
-
-  const totalPages = Math.min(data?.total_pages ?? 1, 500);
+  const totalPages = Math.min(data.total_pages ?? 1, 500);
   const knownCountry = isKnownNetflixCountry(code);
 
   return (

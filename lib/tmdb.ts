@@ -3,14 +3,15 @@ export const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
-function getApiKey(): string {
+function getCredential(): { key: string; isV4: boolean } {
   const key = process.env.TMDB_API_KEY;
   if (!key) {
     throw new Error(
       "TMDB_API_KEY is not set. Add it to .env.local — get one free at themoviedb.org → settings → API.",
     );
   }
-  return key;
+  // v4 read-access tokens are JWTs (start with "eyJ"); v3 keys are 32-char hex.
+  return { key, isV4: key.startsWith("eyJ") };
 }
 
 type FetchOptions = {
@@ -20,8 +21,9 @@ type FetchOptions = {
 };
 
 async function tmdbFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
+  const { key, isV4 } = getCredential();
   const url = new URL(`${TMDB_BASE}${path}`);
-  url.searchParams.set("api_key", getApiKey());
+  if (!isV4) url.searchParams.set("api_key", key);
   if (opts.query) {
     for (const [k, v] of Object.entries(opts.query)) {
       if (v !== undefined && v !== null && v !== "") {
@@ -31,6 +33,9 @@ async function tmdbFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   }
 
   const res = await fetch(url.toString(), {
+    headers: isV4
+      ? { Authorization: `Bearer ${key}`, accept: "application/json" }
+      : { accept: "application/json" },
     next: { revalidate: opts.revalidate ?? 3600 },
   });
 

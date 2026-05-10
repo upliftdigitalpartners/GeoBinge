@@ -68,13 +68,6 @@ export default async function CountryPage({
   const totalPages = Math.min(data.total_pages ?? 1, 500);
   const knownCountry = isKnownNetflixCountry(code);
 
-  const buildHref = (g: number | null) => {
-    const sp = new URLSearchParams();
-    sp.set("tab", activeTab);
-    if (g !== null) sp.set("genre", String(g));
-    return `/country/${code}?${sp.toString()}`;
-  };
-
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-10 sm:px-6 sm:pt-14">
       <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -107,7 +100,8 @@ export default async function CountryPage({
         <GenreFilter
           genres={genreList.genres}
           active={activeGenre}
-          buildHref={buildHref}
+          countryCode={code}
+          tab={activeTab}
         />
       </div>
 

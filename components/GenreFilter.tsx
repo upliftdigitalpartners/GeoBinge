@@ -7,19 +7,28 @@ import type { Genre } from "@/lib/tmdb";
 export function GenreFilter({
   genres,
   active,
-  buildHref,
+  countryCode,
+  tab,
 }: {
   genres: Genre[];
   active: number | null;
-  buildHref: (genreId: number | null) => string;
+  countryCode: string;
+  tab: "movie" | "tv";
 }) {
+  function href(genreId: number | null): string {
+    const sp = new URLSearchParams();
+    sp.set("tab", tab);
+    if (genreId !== null) sp.set("genre", String(genreId));
+    return `/country/${countryCode}?${sp.toString()}`;
+  }
+
   return (
     <div className="scroll-hide -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-      <Chip href={buildHref(null)} active={active === null}>
+      <Chip href={href(null)} active={active === null}>
         All
       </Chip>
       {genres.map((g) => (
-        <Chip key={g.id} href={buildHref(g.id)} active={active === g.id}>
+        <Chip key={g.id} href={href(g.id)} active={active === g.id}>
           {g.name}
         </Chip>
       ))}

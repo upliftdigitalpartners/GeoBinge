@@ -1,0 +1,31 @@
+name: Smoke test Vercel deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Only one smoke run per ref at a time — newer pushes cancel older runs.
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for Vercel deployment
+        id: vercel
+        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Vercel sometimes takes a minute to start the build; wait up to 6 min total.
+          max_timeout: 360
+          check_interval: 10
+
+      - name: Smoke test
+        run: node .github/smoke-test.mjs "${{ steps.vercel.outputs.url }}"

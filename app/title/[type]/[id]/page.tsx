@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Star, Clock, Calendar } from "lucide-react";
 import {
   getTitleDetails,
+  getTitleDetailsExpanded,
   getWatchProviders,
   netflixCountries,
   tmdbImage,
@@ -12,6 +13,9 @@ import {
   type MediaType,
 } from "@/lib/tmdb";
 import { CountryAvailability } from "@/components/CountryAvailability";
+import { TrailerButton } from "@/components/TrailerHero";
+import { CastRow } from "@/components/CastRow";
+import { SimilarTitles } from "@/components/SimilarTitles";
 
 export const revalidate = 21600;
 
@@ -40,7 +44,7 @@ export default async function TitlePage({ params }: { params: Params }) {
   if (!Number.isFinite(id)) notFound();
 
   const [details, providers] = await Promise.all([
-    getTitleDetails(type, id).catch(() => null),
+    getTitleDetailsExpanded(type, id).catch(() => null),
     getWatchProviders(type, id).catch(() => null),
   ]);
 
@@ -177,12 +181,20 @@ export default async function TitlePage({ params }: { params: Params }) {
                 {details.overview}
               </p>
             )}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <TrailerButton videos={details.videos?.results} />
+            </div>
           </div>
         </div>
 
         <div className="mt-14">
           <CountryAvailability countries={countries} />
         </div>
+
+        <CastRow cast={details.credits?.cast} />
+
+        <SimilarTitles type={type} items={details.similar?.results} />
       </div>
     </div>
   );

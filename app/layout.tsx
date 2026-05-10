@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -14,9 +14,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GeoBinge — Where can I watch this on Netflix?",
+  title: {
+    default: "GeoBinge — Where can I watch this on Netflix?",
+    template: "%s · GeoBinge",
+  },
   description:
     "Search any movie or show and instantly see every country where Netflix has it. Pick your VPN, hit play.",
+  applicationName: "GeoBinge",
+  appleWebApp: {
+    capable: true,
+    title: "GeoBinge",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0b",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

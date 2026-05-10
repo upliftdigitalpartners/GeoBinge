@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
 export function Hero() {
   return (
@@ -40,6 +42,21 @@ export function Hero() {
         Search any movie or show — see every country where Netflix has it.
         Pick the right VPN. Hit play.
       </motion.p>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        className="mt-7"
+      >
+        <Link
+          href="/smart"
+          className="group inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent/15"
+        >
+          <Sparkles className="h-4 w-4 text-accent transition group-hover:rotate-12" />
+          Try smart search — describe a vibe in plain English
+        </Link>
+      </motion.div>
     </section>
   );
 }

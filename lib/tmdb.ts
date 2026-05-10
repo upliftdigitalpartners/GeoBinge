@@ -117,6 +117,43 @@ export type TitleDetails = {
   original_language: string;
 };
 
+export type CastMember = {
+  id: number;
+  name: string;
+  character?: string;
+  profile_path: string | null;
+  order: number;
+};
+
+export type CrewMember = {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+};
+
+export type Credits = { cast: CastMember[]; crew: CrewMember[] };
+
+export type Video = {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+  published_at: string;
+};
+
+export type SimilarItem = DiscoverItem;
+
+export type ExpandedTitleDetails = TitleDetails & {
+  credits?: Credits;
+  videos?: { results: Video[] };
+  similar?: { results: SimilarItem[] };
+};
+
+export type Genre = { id: number; name: string };
+
 // ---------- API methods ----------
 
 export function searchMulti(query: string, page = 1) {
@@ -136,18 +173,55 @@ export function getTitleDetails(type: MediaType, id: number) {
   });
 }
 
+export function getTitleDetailsExpanded(type: MediaType, id: number) {
+  return tmdbFetch<ExpandedTitleDetails>(`/${type}/${id}`, {
+    query: {
+      language: "en-US",
+      append_to_response: "credits,videos,similar",
+    },
+    revalidate: 86400,
+  });
+}
+
+export function getGenres(type: MediaType) {
+  return tmdbFetch<{ genres: Genre[] }>(`/genre/${type}/list`, {
+    query: { language: "en-US" },
+    revalidate: 60 * 60 * 24 * 7, // 1 week — genre list almost never changes
+  });
+}
+
 export function getWatchProviders(type: MediaType, id: number) {
   return tmdbFetch<WatchProvidersResponse>(`/${type}/${id}/watch/providers`, {
     revalidate: 21600, // 6 hours
   });
 }
 
+export type DiscoverOptions = {
+  page?: number;
+  sort?: "popularity.desc" | "vote_average.desc" | "primary_release_date.desc";
+  withGenres?: number | string;
+  yearMin?: number;
+  yearMax?: number;
+};
+
 export function discoverByNetflix(
   type: MediaType,
   region: string,
-  page = 1,
-  sort: "popularity.desc" | "vote_average.desc" | "primary_release_date.desc" = "popularity.desc",
+  optsOrPage: number | DiscoverOptions = 1,
+  legacySort: "popularity.desc" | "vote_average.desc" | "primary_release_date.desc" = "popularity.desc",
 ) {
+  // Backward-compatible: callers may pass (page) or (page, sort) or an options object.
+  const opts: DiscoverOptions =
+    typeof optsOrPage === "number"
+      ? { page: optsOrPage, sort: legacySort }
+      : optsOrPage;
+
+  const page = opts.page ?? 1;
+  const sort = opts.sort ?? "popularity.desc";
+
+  const dateField =
+    type === "movie" ? "primary_release_date" : "first_air_date";
+
   return tmdbFetch<{ results: DiscoverItem[]; total_results: number; total_pages: number }>(
     `/discover/${type}`,
     {
@@ -158,6 +232,9 @@ export function discoverByNetflix(
         page,
         language: "en-US",
         include_adult: false,
+        with_genres: opts.withGenres,
+        [`${dateField}.gte`]: opts.yearMin ? `${opts.yearMin}-01-01` : undefined,
+        [`${dateField}.lte`]: opts.yearMax ? `${opts.yearMax}-12-31` : undefined,
       },
       revalidate: 21600,
     },

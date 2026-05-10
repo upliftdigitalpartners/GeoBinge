@@ -3,8 +3,10 @@
 Search any movie or TV show and instantly see every country where Netflix has it. Built for the "let me just switch my VPN real quick" workflow.
 
 - Live search with debounced URL state (`?q=...`) and `⌘K` focus
-- Title detail page with a country grid showing every Netflix region carrying the title — flag, name, "Browse" and direct "Open on Netflix" deep link
-- Browse-by-country page with Movies / TV tabs and pagination (60+ Netflix regions)
+- **Smart search** at `/smart` — describe a vibe in plain English (*"feel-good Korean dramas"*, *"90s sci-fi on Netflix Japan"*) → Groq's Llama 3.3 70B parses it into structured filters → TMDB returns matches
+- Title detail page with **trailer modal**, **cast row**, **similar titles**, and a country grid showing every Netflix region carrying the title — flag, name, "Browse" and direct "Open on Netflix" deep link
+- Browse-by-country page with Movies / TV tabs, **genre filter chips**, and pagination (60+ Netflix regions)
+- **PWA** — installable on iOS/Android home screen, generated icons, dark theme color
 - Smooth Framer Motion entrances, hover micro-interactions, gradient backdrops, skeleton loaders
 - Server Components + Next.js fetch cache → fast & free (well under TMDB rate limits)
 
@@ -14,6 +16,7 @@ Search any movie or TV show and instantly see every country where Netflix has it
 - Tailwind CSS v4
 - Framer Motion + lucide-react icons
 - TMDB API (free) — provider-agnostic wrapper in `lib/tmdb.ts` so swapping in Streaming Availability API later is straightforward
+- Groq API (free tier) for smart search — only needed if you want `/smart`
 
 ## Setup
 

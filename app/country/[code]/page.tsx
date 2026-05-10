@@ -2,19 +2,21 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   discoverByNetflix,
+  getGenres,
   titleOf,
   yearOf,
   type DiscoverItem,
 } from "@/lib/tmdb";
 import { TitleGrid } from "@/components/TitleGrid";
 import { CountryPicker } from "@/components/CountryPicker";
+import { GenreFilter } from "@/components/GenreFilter";
 import { countryName, flagEmoji, isKnownNetflixCountry } from "@/lib/countries";
 import type { TitleCardItem } from "@/components/TitleCard";
 
 export const revalidate = 21600;
 
 type Params = Promise<{ code: string }>;
-type Search = Promise<{ tab?: string; page?: string }>;
+type Search = Promise<{ tab?: string; page?: string; genre?: string }>;
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { code } = await params;
@@ -35,17 +37,23 @@ export default async function CountryPage({
   searchParams: Search;
 }) {
   const { code: rawCode } = await params;
-  const { tab, page } = await searchParams;
+  const { tab, page, genre } = await searchParams;
   const code = rawCode.toUpperCase();
 
   if (!/^[A-Z]{2}$/.test(code)) notFound();
 
   const activeTab: "movie" | "tv" = tab === "tv" ? "tv" : "movie";
   const pageNum = Math.max(1, Math.min(500, Number(page) || 1));
+  const activeGenre = genre ? Number(genre) : null;
 
-  // Only fetch the active tab — saves a round-trip and lets API errors bubble
-  // to error.tsx (instead of being miscategorized as "not found").
-  const data = await discoverByNetflix(activeTab, code, pageNum);
+  const [data, genreList] = await Promise.all([
+    discoverByNetflix(activeTab, code, {
+      page: pageNum,
+      withGenres: activeGenre ?? undefined,
+    }),
+    getGenres(activeTab),
+  ]);
+
   const items: TitleCardItem[] = data.results
     .filter((r) => r.poster_path)
     .map((r: DiscoverItem) => ({
@@ -59,6 +67,13 @@ export default async function CountryPage({
 
   const totalPages = Math.min(data.total_pages ?? 1, 500);
   const knownCountry = isKnownNetflixCountry(code);
+
+  const buildHref = (g: number | null) => {
+    const sp = new URLSearchParams();
+    sp.set("tab", activeTab);
+    if (g !== null) sp.set("genre", String(g));
+    return `/country/${code}?${sp.toString()}`;
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-10 sm:px-6 sm:pt-14">
@@ -84,19 +99,28 @@ export default async function CountryPage({
         <CountryPicker current={code} />
       </div>
 
-      <Tabs activeTab={activeTab} code={code} />
+      <div className="mb-6 flex flex-wrap items-center gap-4">
+        <Tabs activeTab={activeTab} code={code} />
+      </div>
 
-      <div className="mt-8">
+      <div className="mb-8">
+        <GenreFilter
+          genres={genreList.genres}
+          active={activeGenre}
+          buildHref={buildHref}
+        />
+      </div>
+
+      <div className="mt-2">
         {items.length > 0 ? (
           <TitleGrid items={items} priorityCount={6} />
         ) : (
           <div className="rounded-2xl border border-border bg-background-elevated/50 p-12 text-center">
             <div className="text-foreground">
-              No {activeTab === "movie" ? "movies" : "shows"} found for this
-              page.
+              No {activeTab === "movie" ? "movies" : "shows"} found here.
             </div>
             <div className="mt-1 text-sm text-foreground-muted">
-              Try the other tab or pick another country.
+              Try a different genre, the other tab, or another country.
             </div>
           </div>
         )}
@@ -106,6 +130,7 @@ export default async function CountryPage({
         <Pagination
           code={code}
           tab={activeTab}
+          genre={activeGenre}
           page={pageNum}
           totalPages={totalPages}
         />
@@ -148,17 +173,25 @@ function Tabs({
 function Pagination({
   code,
   tab,
+  genre,
   page,
   totalPages,
 }: {
   code: string;
   tab: "movie" | "tv";
+  genre: number | null;
   page: number;
   totalPages: number;
 }) {
   const prev = page > 1 ? page - 1 : null;
   const next = page < totalPages ? page + 1 : null;
-  const link = (p: number) => `/country/${code}?tab=${tab}&page=${p}`;
+  const link = (p: number) => {
+    const sp = new URLSearchParams();
+    sp.set("tab", tab);
+    if (genre !== null) sp.set("genre", String(genre));
+    sp.set("page", String(p));
+    return `/country/${code}?${sp.toString()}`;
+  };
   return (
     <div className="mt-12 flex items-center justify-center gap-3">
       <PaginationLink href={prev ? link(prev) : null}>← Previous</PaginationLink>

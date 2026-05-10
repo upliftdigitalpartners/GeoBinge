@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Globe2 } from "lucide-react";
+import { Globe2, Sparkles } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 
 export function Header() {
@@ -26,6 +26,13 @@ export function Header() {
         </div>
 
         <nav className="hidden sm:flex items-center gap-1 text-sm">
+          <Link
+            href="/smart"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-foreground-muted transition hover:bg-white/5 hover:text-foreground"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
+            Smart
+          </Link>
           <Link
             href="/country/US"
             className="rounded-full px-3 py-1.5 text-foreground-muted transition hover:bg-white/5 hover:text-foreground"

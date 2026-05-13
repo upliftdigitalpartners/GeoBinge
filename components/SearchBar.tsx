@@ -11,14 +11,27 @@ export function SearchBar() {
   const initial = params.get("q") ?? "";
   const [value, setValue] = useState(initial);
   const [lastSyncedInitial, setLastSyncedInitial] = useState(initial);
+  // Tracks the most recent value we pushed to the URL ourselves. When the
+  // URL eventually catches up to match this, we know the change came from
+  // us (debounce) — not external nav — and we should NOT overwrite the
+  // user's input (which may have advanced since we pushed). Stored as state
+  // (not a ref) so we can both read and clear it during render.
+  const [pendingSelfPush, setPendingSelfPush] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Keep input in sync if URL changes externally (back button, link click).
-  // Pattern: derive on render rather than calling setState in an effect.
+  // Derive at render time rather than in an effect. Skip the sync when the
+  // URL change was caused by our own debounce — that's the race that wipes
+  // characters typed mid-debounce.
   if (initial !== lastSyncedInitial) {
     setLastSyncedInitial(initial);
-    setValue(initial);
+    if (pendingSelfPush === initial) {
+      // Our own push just landed. Clear the marker, don't touch `value`.
+      setPendingSelfPush(null);
+    } else {
+      setValue(initial);
+    }
   }
 
   // Cmd/Ctrl-K to focus
@@ -45,9 +58,10 @@ export function SearchBar() {
       const current =
         pathname + (params.toString() ? `?${params.toString()}` : "");
       if (target !== current) {
+        setPendingSelfPush(trimmed);
         startTransition(() => router.replace(target, { scroll: false }));
       }
-    }, 200);
+    }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
